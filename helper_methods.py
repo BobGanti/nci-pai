@@ -18,6 +18,7 @@ class Helper:
     # Function checks the downloaded file size and compress with 'zlib' if necessary.
     @staticmethod
     def compress_if_necessary(d):
+
         BSON_SIZE_LIMIT = 16 * 1024 * 1024  # Limit 16MB in Bytes.
 
         # Check if data is a string and encode it.
@@ -59,7 +60,6 @@ class Helper:
         df.drop(cols, axis=1, inplace=True)  # Dropping the original 'Category' column from df
         df_enc.fillna(0, inplace=True)  # Replace NaN in the encoded DataFrame with 0
         return df.join(df_enc)
-
 
     @staticmethod
     def onehot_decode(df, col_to_decode):
