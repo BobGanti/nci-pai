@@ -60,11 +60,11 @@ class Helper:
         df_enc.fillna(0, inplace=True)  # Replace NaN in the encoded DataFrame with 0
         return df.join(df_enc)
 
-    @staticmethod
-    def onehot_decode(df, col_name):
-        cols = [col for col in df.columns if col.startswith(f'{col_name}_')]
-        df.fillna(0, inplace=True)
-        df[col_name] = df[cols].idxmax(axis=1)  # returns NaN if the column or row contains all missing values
-        df[col_name] = df[col_name].str.replace(f'{col_name}_', '')
-        return df
 
+    @staticmethod
+    def onehot_decode(df, col_to_decode):
+        cols = [col for col in df.columns if col.startswith(f'{col_to_decode}_')]
+        # df.fillna(0, inplace=True)
+        df[col_to_decode] = df[cols].idxmax(axis=1)  # returns NaN if the column or row contains all missing values
+        df[col_to_decode] = df[col_to_decode].str.replace('BankingGroup_', '')
+        return df
