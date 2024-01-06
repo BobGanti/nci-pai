@@ -23,6 +23,7 @@ class DataAnalyser:
         # Main functionality of the class goes here
         print("Running data analysis...\n")
 
+<<<<<<< HEAD
         # self.store_raw_data()
         # self.raw_dataset_stats()
         # self.histogram_values()
@@ -37,6 +38,23 @@ class DataAnalyser:
 
         # *************************
         self.david_raw_file()
+=======
+        self.store_raw_data()
+        self.raw_dataset_stats()
+        self.histogram_values()
+        self.boxplot_outliers()
+        self.preprocess_data()
+        self.processed_dataset_stats()
+        self.plot_value_overtime()
+        self.plot_distribution_by_bankinggroup()
+        self.plot_corr_matrix()
+        self.plot_time_series()
+        self.plot_pi_currency_count()
+
+        # *************************
+        # self.store_david_data()
+        # self.load_saved_david_data()
+>>>>>>> origin/main
 
     # Method triggers file download from the Swiss National Bank, Instantiates MongoDb in the data_layer file
     # and sends raw file for storage.
@@ -251,6 +269,7 @@ class DataAnalyser:
         print(aggregated_data)
 
     # **************************************************************************************************
+<<<<<<< HEAD
 
     def david_raw_file(self):
 
@@ -278,6 +297,31 @@ class DataAnalyser:
 
         store_david_data()
         df = load_saved_david_data()
+=======
+    def store_david_data(self):
+        csv_url = "https://data.snb.ch/api/cube/auvercurra/data/csv/en"
+        coll_name = "david_coll"
+        if input("Do you want to download the dataset (y/n)? ").lower() == "y":
+            print("Downloading and Storing Raw Data...")
+            snb_david_csv = Helper.download_file(csv_url)
+            data_io = Helper.compress_if_necessary(snb_david_csv)  # returns bytes data compressed or not
+            db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+            inserted_id = db.savefile_in_db(data_io, "snb_raw_csv")  # returns inserted_id
+
+    def load_saved_david_data(self):
+        coll_name = "david_coll"
+        inserted_id = "6590d5a4655571e0a80959e5"
+        db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+        d = db.loadfile_from_db(inserted_id)
+        # Checking if the retrieved data was compressed before storing. If so, decompresses
+        if Helper.is_zlib_compressed(d):
+            d = zlib.decompress(d)
+        d = d.decode()  # string data was encoded to bytes before storing. Decode it back to string
+        d_io = StringIO(d)  # Convert the string data to a file-like obj for pd to be able to read
+
+        df = pd.read_csv(d_io, delimiter=';', skiprows=2)  # Skip 1st two rows (They're non-informative)
+
+>>>>>>> origin/main
         self.__deep_exploration(df)
 
 
