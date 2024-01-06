@@ -2,6 +2,7 @@ import requests
 import zlib
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
+from scipy import stats
 
 
 class Helper:
@@ -66,5 +67,33 @@ class Helper:
         cols = [col for col in df.columns if col.startswith(f'{col_to_decode}_')]
         # df.fillna(0, inplace=True)
         df[col_to_decode] = df[cols].idxmax(axis=1)  # returns NaN if the column or row contains all missing values
-        df[col_to_decode] = df[col_to_decode].str.replace('BankingGroup_', '')
+        df[col_to_decode] = df[col_to_decode].str.replace(f'{col_to_decode}_', '')
         return df
+
+    @staticmethod
+    def deep_exploration(df):
+        years_with_nans = df[df['Value'].isna()]
+        df['Date'] = df['Date'].astype(int)
+
+        # Group by 'Year' and filter out those groups (years) that have any NaN in 'Value'
+        years_without_nans = df.groupby('Date').filter(lambda x: not x['Value'].isnull().any())['Date'].unique()
+
+        # Filter records from Date where no empty entry exists in target column to 2022
+        fully_filled_df = df[(df['Date'] >= years_without_nans[0]) & (df['Date'] <= years_without_nans[-1])]
+
+        records_stats = [
+            f'YEARS WITH NaNs:\n{years_with_nans} \n\n',
+            f'YEARS WITHOUT NaNs:\n{fully_filled_df} \n\n'
+        ]
+
+        # Grouping by 'Date' and calculate the required statistics along with NaN counts
+        aggregated_data = df.groupby('Date')['Value'].agg(
+            records='size',
+            min_value='min',
+            max_value='max',
+            mean_value='mean',
+            median_value='median',
+            mode_value=lambda x: stats.mode(x)[0] if not x.isnull().all() else None,  # Adjusted mode calculation
+            nan_count=lambda x: x.isna().sum()  # Count of NaNs
+        )
+        return records_stats, aggregated_data
