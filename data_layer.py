@@ -4,9 +4,6 @@ import datetime
 from sqlalchemy import insert
 from sqlalchemy import create_engine
 
-from graph_model import df
-
-
 class MongoDB:
     def __init__(self, db_name, cnn_str, collection_name):
         self._database_name = db_name
@@ -44,7 +41,7 @@ class MongoDB:
         self.__close_connection()
         return result.inserted_ids
 
-    def loadprocessed_csv_from_db(self):
+    def load_all_saved_documents(self):
         collection = self.__connect_db()
         documents = list(collection.find())
         self.__close_connection()
@@ -60,29 +57,29 @@ class MongoDB:
 # *****************************************
 # MySQLDB REGION
 # *****************************************
-class MySQLDB:
-    def __init__(self, username, password, server_url, database_name):
-        self.server_url = server_url
-        self.database_name = database_name
-        self.username = username
-        self.password = password
-        self.conn_str = conn_str = f'mysql+mysqlconnector://{self.username}:{self.password}@{self.server_url}/{self.database_name}'
-
-    def __get_connection(self):
-        engine = create_engine(self.conn_str)
-        return engine
-
-    def raw_csv_to_db(self, csv, table_name):
-        engine = self.__get_connection()
-        result = df.to_sql(name=table_name, con=engine, if_exists='append', index=False)
-        return result.inserted_id
-
-    def raw_csv_from_db(self, table_name):
-        engine = self.__get_connection()
-
-        df = pd.read_sql_table(table_name, engine)
-        return df
-
-
+# class MySQLDB:
+#     def __init__(self, username, password, server_url, database_name):
+#         self.server_url = server_url
+#         self.database_name = database_name
+#         self.username = username
+#         self.password = password
+#         self.conn_str = conn_str = f'mysql+mysqlconnector://{self.username}:{self.password}@{self.server_url}/{self.database_name}'
+#
+#     def __get_connection(self):
+#         engine = create_engine(self.conn_str)
+#         return engine
+#
+#     def raw_csv_to_db(self, csv, table_name):
+#         engine = self.__get_connection()
+#         result = df.to_sql(name=table_name, con=engine, if_exists='append', index=False)
+#         return result.inserted_id
+#
+#     def raw_csv_from_db(self, table_name):
+#         engine = self.__get_connection()
+#
+#         df = pd.read_sql_table(table_name, engine)
+#         return df
+#
+#
 
 

@@ -9,6 +9,59 @@ from helper_methods import *
 from data_layer import MongoDB
 from io import StringIO
 
+class GraphModel:
+    def __init__(self):
+        pass
+
+    def david_raw_file(self):
+
+        dl_url = "https://data.snb.ch/api/cube/auvercurra/data/csv/en"
+        coll_name = "david_coll"
+        def store_david_data():
+            if input("Do you want to download the dataset (y/n)? ").lower() == "y":
+                print("Downloading and Storing Raw Data...")
+                snb_david_csv = Helper.download_file(dl_url)
+                data_io = Helper.compress_if_necessary(snb_david_csv)  # returns bytes data compressed or not
+                db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+                return db.savefile_in_db(data_io)  # returns inserted_id
+
+        def load_saved_david_data():
+            inserted_id = "6590d5a4655571e0a80959e5"
+            db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+            d = db.loadfile_from_db()
+            # Checking if the retrieved data was compressed before storing. If so, decompresses
+            if Helper.is_zlib_compressed(d):
+                d = zlib.decompress(d)
+            d = d.decode()  # string data was encoded to bytes before storing. Decode it back to string
+            d_io = StringIO(d)  # Convert the string data to a file-like obj for pd to be able to read
+
+            return pd.read_csv(d_io, delimiter=';', skiprows=2)  # Skip 1st two rows (They're non-informative)
+
+    def store_david_data(self):
+        csv_url = "https://data.snb.ch/api/cube/auvercurra/data/csv/en"
+        coll_name = "david_coll"
+        if input("Do you want to download the dataset (y/n)? ").lower() == "y":
+            print("Downloading and Storing Raw Data...")
+            snb_david_csv = Helper.download_file(csv_url)
+            data_io = Helper.compress_if_necessary(snb_david_csv)  # returns bytes data compressed or not
+            db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+            inserted_id = db.savefile_in_db(data_io,)  # returns inserted_id
+
+    def load_saved_david_data(self):
+        coll_name = "david_coll"
+        inserted_id = "6590d5a4655571e0a80959e5"
+        db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+        d = db.loadfile_from_db()
+        # Checking if the retrieved data was compressed before storing. If so, decompresses
+        if Helper.is_zlib_compressed(d):
+            d = zlib.decompress(d)
+        d = d.decode()  # string data was encoded to bytes before storing. Decode it back to string
+        d_io = StringIO(d)  # Convert the string data to a file-like obj for pd to be able to read
+
+        df = pd.read_csv(d_io, delimiter=';', skiprows=2)  # Skip 1st two rows (They're non-informative)
+
+
+
 
 # Neo4j database connection details
 # Please change this details to your corresponding server information

@@ -43,8 +43,8 @@ class Helper:
 
     # # Download data
     @staticmethod
-    def download_file(url):
-        response = requests.get(url)
+    def download_file(dl_url):
+        response = requests.get(dl_url)
         if response.status_code == 200:
             return response.text
         else:
@@ -71,7 +71,7 @@ class Helper:
         return df
 
     @staticmethod
-    def deep_exploration(df):
+    def deep_exploration(df):   # Exploring the raw dataset at a deeper level. Method is at the bottom of the clas
         years_with_nans = df[df['Value'].isna()]
         df['Date'] = df['Date'].astype(int)
 

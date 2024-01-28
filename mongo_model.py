@@ -9,7 +9,7 @@ import numpy as np
 from scipy import stats
 
 
-class DataAnalyser:
+class MongoModel:
     def __init__(self):
         self.db_name = "pai_proj_db"
         self.connection_string = 'mongodb://localhost:27017/'
@@ -23,22 +23,6 @@ class DataAnalyser:
         # Main functionality of the class goes here
         print("Running data analysis...\n")
 
-<<<<<<< HEAD
-        # self.store_raw_data()
-        # self.raw_dataset_stats()
-        # self.histogram_values()
-        # self.boxplot_outliers()
-        # self.preprocess_data()
-        # self.processed_dataset_stats()
-        # self.plot_value_overtime()
-        # self.plot_distribution_by_bankinggroup()
-        # self.plot_corr_matrix()
-        # self.plot_time_series()
-        # self.plot_pi_currency_count()
-
-        # *************************
-        self.david_raw_file()
-=======
         self.store_raw_data()
         self.raw_dataset_stats()
         self.histogram_values()
@@ -52,9 +36,6 @@ class DataAnalyser:
         self.plot_pi_currency_count()
 
         # *************************
-        # self.store_david_data()
-        # self.load_saved_david_data()
->>>>>>> origin/main
 
     # Method triggers file download from the Swiss National Bank, Instantiates MongoDb in the data_layer file
     # and sends raw file for storage.
@@ -66,8 +47,8 @@ class DataAnalyser:
             # DATA SOURCE csv - Swiss Nation Bank (SNB) Total Assets 1987 - 2022.
             snb_raw_csv = Helper.download_file(csv_url)
             data_io = Helper.compress_if_necessary(snb_raw_csv)  # returns bytes data compressed or not
-            db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-            self.inserted_id = db.savefile_in_db(data_io, "snb_raw_csv")  # returns inserted_id
+            db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+            self.inserted_id = db.savefile_in_db(data_io)  # returns inserted_id
 
     # ***** DATA EXPLORATION REGION *****
     # ########################################################
@@ -75,8 +56,8 @@ class DataAnalyser:
     # Function to initiate retrieving data from the MongoDb.
     def load_saved_raw_data(self):
         coll_name = "raw_csv"
-        db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-        d = db.loadfile_from_db(self.inserted_id)
+        db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
+        d = db.loadfile_from_db()
         # Checking if the retrieved data was compressed before storing. If so, decompresses
         if Helper.is_zlib_compressed(d):
             d = zlib.decompress(d)
@@ -96,18 +77,18 @@ class DataAnalyser:
 
     # 1. Raw Dataset Overview
     def raw_dataset_stats(self):
-        df = self.load_saved_raw_data()
+        d = self.load_saved_raw_data()
 
-        empty_values = df[df['Value'].isna()]
-        df['Date'] = df['Date'].astype(int)
+        empty_values = d[d['Value'].isna()]
+        d['Date'] = d['Date'].astype(int)
 
-        fully_filled_df = df[(df['Date'] >= 2015) & (df['Date'] <= 2022)]  # Filter for years 2015 to 2022
-        print(f'RAW DATA STATS:\n********************* \n\nSHAPE: {df.shape} '
-              f'\n\nDATASET DESCRIPTION:\n{df.describe()} \n\nDATAFRAME:\n{df.head()} '
-              f'\n\nMISSING VALUES:\n{df.isnull().sum()}\n\nMISSING VALUE ROWS:\n{empty_values}'
-              f'\n\nFULLY FILLED ROWS:\n{fully_filled_df} \n\n')
+        fully_filled_df = d[(d['Date'] >= 2015) & (d['Date'] <= 2022)]  # Filter for years 2015 to 2022
+        print(f'RAW DATA STATS:\n********************* \n\nSHAPE: {d.shape} '
+              f'\n\nDATASET DESCRIPTION:\n{d.describe()} \n\nDATAFRAME:\n{d.head()} '
+              f'\n\nMISSING VALUES:\n{d.isnull().sum()}\n\n')
 
-        self.__deep_exploration(df)  # Exploring the raw dataset at a deeper level. Method is at the bottom of the class.
+        res = Helper.deep_exploration(d)
+        print(f"{res[0][0]} \n\n{res[0][1]} \n\n{res[1]}")
 
     # 2. Histogram to show a positive skew in the dataset
     def histogram_values(self):
@@ -138,8 +119,8 @@ class DataAnalyser:
             print("Processing data...")
             df.to_csv("processed_csv")
             records = df.to_dict(orient='records')  # DataFrame to a list of dictionaries
-            db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name='processed_csv')
-            return db.saveprocessed_in_db(records, 'snb_processed_csv')
+            db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name='processed_csv')
+            return db.saveprocessed_csv_in_db(records, 'snb_processed_csv')
 
         raw_df = self.load_saved_raw_data()  #  Sends command to load stored Raw detaset from db
 
@@ -163,10 +144,10 @@ class DataAnalyser:
         self.processed_ids = store_processed_data(df_cleaned)
 
     def processed_dataset_stats(self):
-        df = self.__load_saved_precessed_data()
-        print(f'PROCESSED DATA STATS:\n********************* \n\nSHAPE:\n{df.shape} '
-              f'\n\nDATASET DESCRIPTION:\n{df.describe()} \n\nDATAFRAME:\n{df.tail()} '
-              f'\n\nMISSING VALUES:\n{df.isnull().sum()}\n\n')
+        d = self.__load_saved_precessed_data()
+        print(f'PROCESSED DATA STATS:\n********************* \n\nSHAPE:\n{d.shape} '
+              f'\n\nDATASET DESCRIPTION:\n{d.describe()} \n\nDATAFRAME:\n{d.tail()} '
+              f'\n\nMISSING VALUES:\n{d.isnull().sum()}\n\n')
 
 
     # VISUALISATION
@@ -212,6 +193,7 @@ class DataAnalyser:
     # 4. Method plots an overview of banking behaviour from 1987 to 2022
     def plot_time_series(self):
         print("Plotting Time Series...")
+
         df = self.__load_saved_precessed_data()
         df.plot(x='Date', y='Value')
         plt.title('Time Series Plot of Value')
@@ -222,6 +204,7 @@ class DataAnalyser:
     # 6. Method plots a pi chart of the ratio of different currencies
     def plot_pi_currency_count(self):
         print("Plotting Currency counts...")
+
         df = self.__load_saved_precessed_data()
         df = Helper.onehot_decode(df, 'Currency')
         currency_counts = df['Currency'].value_counts()
@@ -235,98 +218,15 @@ class DataAnalyser:
 
     # Method responsible for getting the dataset from the data layer.
     def __load_saved_precessed_data(self):
-        print("Loading processed data ...")
-        db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name='processed_csv')
+        db = MongoDB(db_name=self.db_name, cnn_str=self.connection_string, collection_name='processed_csv')
         documents = db.load_all_saved_documents()
         # db.close_connection()
         d = pd.DataFrame(documents)
         return d.drop('_id', axis=1)
 
-    # Method responsible for deeper analysis of the raw dataset from db
-    def __deep_exploration(self, df):
-        empty_values = df[df['Value'].isna()]
-        df['Date'] = df['Date'].astype(int)
-
-        fully_filled_df = df[(df['Date'] >= 2015) & (df['Date'] <= 2022)]  # Filter for years 2015 to 2022
-        print(f'RAW DATA STATS:\n********************* \n\nSHAPE: {df.shape} '
-              f'\n\nDATASET DESCRIPTION:\n{df.describe()} \n\nDATAFRAME:\n{df.head()} '
-              f'\n\nMISSING VALUES:\n{df.isnull().sum()}\n\nMISSING VALUE ROWS:\n{empty_values}'
-              f'\n\nFULLY FILLED ROWS:\n{fully_filled_df} \n\n')
-
-        print("****** DEEP EXPLORATION: Calculating Statistics For Each Year *****")
-        print('')
-
-        # Grouping by 'Date' and calculate the required statistics along with NaN counts
-        aggregated_data = df.groupby('Date')['Value'].agg(
-            records='size',
-            min_value='min',
-            max_value='max',
-            mean_value='mean',
-            median_value='median',
-            mode_value=lambda x: stats.mode(x)[0] if not x.isnull().all() else None,  # Adjusted mode calculation
-            nan_count=lambda x: x.isna().sum()  # Count of NaNs
-        )
-        print(aggregated_data)
-
-    # **************************************************************************************************
-<<<<<<< HEAD
-
-    def david_raw_file(self):
-
-        csv_url = "https://data.snb.ch/api/cube/auvercurra/data/csv/en"
-        coll_name = "david_coll"
-        def store_david_data():
-            if input("Do you want to download the dataset (y/n)? ").lower() == "y":
-                print("Downloading and Storing Raw Data...")
-                snb_david_csv = Helper.download_file(csv_url)
-                data_io = Helper.compress_if_necessary(snb_david_csv)  # returns bytes data compressed or not
-                db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-                return db.savefile_in_db(data_io, "snb_raw_csv")  # returns inserted_id
-
-        def load_saved_david_data():
-            inserted_id = "6590d5a4655571e0a80959e5"
-            db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-            d = db.loadfile_from_db(inserted_id)
-            # Checking if the retrieved data was compressed before storing. If so, decompresses
-            if Helper.is_zlib_compressed(d):
-                d = zlib.decompress(d)
-            d = d.decode()  # string data was encoded to bytes before storing. Decode it back to string
-            d_io = StringIO(d)  # Convert the string data to a file-like obj for pd to be able to read
-
-            return pd.read_csv(d_io, delimiter=';', skiprows=2)  # Skip 1st two rows (They're non-informative)
-
-        store_david_data()
-        df = load_saved_david_data()
-=======
-    def store_david_data(self):
-        csv_url = "https://data.snb.ch/api/cube/auvercurra/data/csv/en"
-        coll_name = "david_coll"
-        if input("Do you want to download the dataset (y/n)? ").lower() == "y":
-            print("Downloading and Storing Raw Data...")
-            snb_david_csv = Helper.download_file(csv_url)
-            data_io = Helper.compress_if_necessary(snb_david_csv)  # returns bytes data compressed or not
-            db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-            inserted_id = db.savefile_in_db(data_io, "snb_raw_csv")  # returns inserted_id
-
-    def load_saved_david_data(self):
-        coll_name = "david_coll"
-        inserted_id = "6590d5a4655571e0a80959e5"
-        db = MongoDb(db_name=self.db_name, cnn_str=self.connection_string, collection_name=coll_name)
-        d = db.loadfile_from_db(inserted_id)
-        # Checking if the retrieved data was compressed before storing. If so, decompresses
-        if Helper.is_zlib_compressed(d):
-            d = zlib.decompress(d)
-        d = d.decode()  # string data was encoded to bytes before storing. Decode it back to string
-        d_io = StringIO(d)  # Convert the string data to a file-like obj for pd to be able to read
-
-        df = pd.read_csv(d_io, delimiter=';', skiprows=2)  # Skip 1st two rows (They're non-informative)
-
->>>>>>> origin/main
-        self.__deep_exploration(df)
-
 
 if __name__ == '__main__':
-    analyser = DataAnalyser()
-    analyser.run()
+    model = MongoModel()
+    model.run()
 
 
